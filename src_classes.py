@@ -1,5 +1,5 @@
-from collections import UserDict
-from datetime import datetime
+from collections import UserDict, defaultdict
+from datetime import datetime, timedelta
 
 
 # родительский
@@ -72,6 +72,7 @@ class Birthday(Field):
         except ValueError:
             raise ValueError(f'Write birthday in format like "27 August 1987"') from None
 
+
     # добавление/удаление/редактирование
 class Record:
     def __init__(self, name: Name, phones: list[Phone] = None, bday = None):
@@ -99,7 +100,7 @@ class Record:
     def days_to_birthday(self):
         if not self.bday:
             return "Birthdate not set."
-        bday = datetime.strptime(self.bday, '%d %B %Y')
+        bday = datetime.strptime(self.bday.value, '%d %B %Y')
         now = datetime.now()
         bday_day = bday.day
         bday_month = bday.month
@@ -111,7 +112,7 @@ class Record:
         if (bday_cur_Y - now).days < 0:
             bday_next_Y = datetime(year = now.year + 1, month = bday_month, day = bday.day)
             diff = bday_next_Y - now
-        return f'{diff.days} days left to your birthday'
+        return f'{self.name}, {self.bday}: {diff.days} days left to your birthday'
 
 
     def __str__(self):
@@ -120,19 +121,9 @@ class Record:
     def __repr__(self):
         return str(self)
 
-# Nata_bd = Birthday('27 August 1987')
-# name1 = Record("Nataly", ["+34"])
-# print(name1.days_to_birthday("27 August 1987"))
-# print(name1.add_phone("44"))
-# print(name1.phones)
-# name2 = Name('Andrew')
-# print(name2)
-# phone2 = Phone('0956985211')
-# print(phone2)
-# record2 = Record(name2, phone2)
-# print(record2.phones)
-# print(name1.del_phone('4487654'))
-# print(name1.edit_phone("44006600", "38"))
+    # добавляем метод get для ф-ии bday_on_week_func()
+    def get(self, key):
+        return getattr(self, key)
 
 
 # поиск по записям
@@ -187,6 +178,39 @@ class AddressBook(UserDict):
                                    [Phone(p) for p in rec['phones']],
                                    None if rec['bday'] == "None" else Birthday(rec['bday'])))
 
+    def get_birthdays_in_x_days(self, x: int) -> str:
+        today = datetime.today().date()
+        future_date = today + timedelta(days=x)
+        # пустой список в качестве значений для всех ключей словаря
+        weeks_dict = defaultdict(list)
+
+        for value in self.data.values():
+            if value.get('bday'):
+                # превращаем объект класса Birthday в дату
+                date = datetime.strptime(value.get('bday').value, '%d %B %Y')
+                # превращаем в дату текущего года
+                bday = datetime.strptime(f"{date.strftime(('%d %B'))} {datetime.now().year}", '%d %B %Y').date()
+                days_left = (bday-future_date).days
+                if days_left == 0:
+                    weeks_dict[f'In {x} days from today'].append(value.name.value)
+                elif days_left == 1:
+                    weeks_dict[f'Next day after {x} days from today'].append(value.name.value)
+                elif 1 < days_left <= 7:
+                    weeks_dict[bday.strftime('%A, %d %B')].append(value.name.value)
+
+
+        output_str = ''
+        for day, contacts in weeks_dict.items():
+            if contacts:
+                contacts_str = ', '.join(contacts)
+                output_str += f'{day}: {contacts_str}\n'
+
+        return output_str
+
+
+
+
+
     def __repr__(self):
         return str(self)
 
@@ -197,5 +221,8 @@ class AddressBook(UserDict):
             results.append(result)
         return '\n'.join(results)
 
+    def __getitem__(self, key):
+        return self.data.get(key)
 
-
+    def __setitem__(self, key, item):
+        self.data[key] = item
