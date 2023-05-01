@@ -5,7 +5,7 @@ import re
 from src_classes import Name, Phone, Record, Birthday, AddressBook
 
 
-
+#тестовий комент
 
 # Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
 def read_contacts(file_name):
