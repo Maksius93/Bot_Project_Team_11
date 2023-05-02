@@ -99,14 +99,10 @@ class Record:
             return f"Phone number {old_phone} has been substituted with {new_phone} for contact {self.name}"
         return f'{old_phone} not in list'
 
-    # def add_bday(self, bday: Birthday):
-    #     self.bday = bday
-    #     return f"Contact {self.name} with {bday} phone number has been added"
-
     def days_to_birthday(self):
         if not self.bday:
             return "Birthdate not set."
-        bday = datetime.strptime(self.bday.value, '%d %B %Y')
+        bday = datetime.strptime(self.bday, '%d %B %Y')
         now = datetime.now()
         bday_day = bday.day
         bday_month = bday.month

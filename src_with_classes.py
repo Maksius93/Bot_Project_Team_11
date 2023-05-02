@@ -58,14 +58,16 @@ def hello_func(*args, **kwargs):
 def help_func(*args, **kwargs):
     contacts = kwargs['contacts']
     return ''' 
-               For adding Contacts type "add"
-               To change Contacts type "change"
-               To get Contact`s phone number type "phone" and Contact`s name after
-               To get Contact`s birthday type "bd" and Contact`s name after
-               To see all Contacts with birthday in next n days, type "reminder n"
-               To get all Contacts type "show all/show", to get n records, type "show n"
-               To delete Contact type "delete"
-               To exit type "bye"/"close"/"exit"/"." 
+            To add contacts type "add" and contact`s name after. You can also add phones (>5 digits each), birthdate (format like '27 August 1987' wo quotes), email, notes after name 
+            or leave these fields empty. You can also add phone number using this command after contact was created by it`s name. 
+            To change contact`s phone number type "change" and contact`s name after, old phone you want to change and new phone (>5 digits) at the end.
+            To get contact`s phone numbers type "phone" and contact`s name after.
+            To get contact`s birthday type "bd" and contact`s name after.
+            To see all contacts with birthday in next n days from today, type "reminder n" (for example, 'reminder 0' wo quotes). You also`ll get contacts with bithday in next 7 days 
+            after the date you want to check.
+            To get all contacts in your notebook type "show all/show", to get n records, type "show n" wo quotes.
+            To delete contact type "delete" and contact`s name after.
+            To exit and save changes type "bye"/"close"/"exit"/"."  
             ''', contacts
 
 
@@ -103,10 +105,16 @@ def add_func(*args, **kwargs):
         save_contacts(file_name, contacts.to_dict())
         return f"Contact {name} with phone {phones} and birthday '{bday}' successfully added", contacts
     # вместо contacts[name] = phone присваиваем метод класса AddressBook
-    contact = contacts.get(str(name))
-    contact.add_phone(*phones)
-    save_contacts(file_name, contacts.to_dict())
-    return f"Phone {phones} added to contact {name}.", contacts
+    if phones:
+        contact = contacts.get(str(name))
+        contact.add_phone(*phones)
+        save_contacts(file_name, contacts.to_dict())
+        return f"Phone {phones} added to contact {name}.", contacts
+    elif bday:
+        contact = contacts.get(str(name))
+        contact.bday = Birthday(bday)
+        save_contacts(file_name, contacts.to_dict())
+        return f"Birthday {bday} added to contact {name}.", contacts
 
 
 @Error_func
@@ -119,27 +127,18 @@ def change_func(*args, **kwargs):
         name = Name(args[0].strip().lower())
     else:
         raise IndexError()
-    # old_phone = contacts.get(name) Це буде не old_phone, а екземпляр Record
-    # contacts[name] = ""
-    # phones = contacts.get(str(name))[0]
     # буде на першій позиції в аргсах
     old_phone = Phone(args[1].strip().lower())
     # буде на другій позиції в аргсах
     new_phone = Phone(args[2].strip().lower())
-    # rec = Record(name,new_phone) екземпляр Record потрібно дістати з книги контактів
     # если имени нет в словаре, оно добавится, если нет - поменяется номер
-    # contacts[name] = new_phone
     # метод edit_phone у нас для списка, мы извлекаем список по ключу словаря
     rec = contacts.get(str(name))
     if rec:
         rec.edit_phone(old_phone, new_phone)
         save_contacts(file_name, contacts.to_dict())
-    # rec = contacts.get(str(name))
     # без str не работает, либо rec = contacts.get(name.value)
-    # if rec:
-    #     rec.edit_phone(old_phone, new_phone)
         return f"Phone for contact {name} changed successfully.\nOld phone {old_phone}, new phone {new_phone}", contacts
-    # return f"Phone {new_phone} for contact {name} added successfully.", contacts # Якщо change буде додавати нові номери, то це не зовсім логічно(
     return f"Contact {name} doesn't exist", contacts
 
 
@@ -168,12 +167,12 @@ def phone_func(*args, **kwargs):
 def bday_func(*args, **kwargs):
     contacts = kwargs['contacts']
     name = Name(args[0].strip().lower())
-    # bd = str(Birthday(contacts.get(str(name))[1]))
 # метод применяем к экземпляру класса
     rec = contacts.get(str(name))
+    print(type(rec))
     if rec:
-        return rec.days_to_birthday(), contacts
-    # days_to_bd = Record(name, bd).days_to_birthday(bd)
+        result = rec.days_to_birthday()
+        return result, contacts
     return f"Contact {name} doesn't exist", contacts
 
 
@@ -206,17 +205,6 @@ def get_birthdays_in_x_days(*args, **kwargs):
         return "Type days number from today", contacts
     return "No contacts found", contacts
 
-
-# def find_func(*args, **kwargs):
-#     contacts = kwargs["contacts"]
-#     n = args[0].strip().lower()
-#     result = []
-#     for key, value in contacts.items():
-#             if n in key or \
-#                     (isinstance(value, list) and any(n in phone for phone in value[1]) \
-#                     or n.lower() in value[2].strip().lower()):
-#                 result.append(f"{key} : {value}")
-#     return '\n'.join(result) or None, contacts
 
 def find_func(*args, **kwargs):
     contacts = kwargs["contacts"]
@@ -296,6 +284,8 @@ def main(file_name):
     # делаем словарь экземпляром объекта AddressBook, и все, contacts только тут, не нужно делать то же самое и  перезаписывать в ф-циях
     contacts = AddressBook()
     contacts.from_dict(read_contacts(file_name))
+    result, contacts = help_func(contacts=contacts)
+    print(result)
     while True:
         # Ф-я handler проверяет, является ли введенный текст командой, сверяясь со словарем MODES,
         # и возвращает нужную ф-ю, а также список из текста после команды
