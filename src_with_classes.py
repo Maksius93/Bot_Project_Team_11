@@ -218,15 +218,15 @@ def get_birthdays_in_x_days(*args, **kwargs):
 #                 result.append(f"{key} : {value}")
 #     return '\n'.join(result) or None, contacts
 
-
 def find_func(*args, **kwargs):
     contacts = kwargs["contacts"]
     n = args[0].strip().lower()
     result = []
     for key, value in contacts.items():
-        if n in value.get("name").value or n.lower() in value.get("bday").value.strip().lower() \
-                or any(n in str(phone.phone) for phone in value.get("phones")):
-            result.append(f"{key} : {value}")
+        if n in "{} {} {}".format(str(value.name).lower(),
+                                  str(value.phones),
+                                  str(value.bday)):
+            result.append(f"{key} : {value.phones}, {value.bday}")
     return '\n'.join(result) or f"There are no results with {n}", contacts
 
 
@@ -255,7 +255,7 @@ def handler(text):
 # и обязательно добавляем 2-ю переменную в ф-и Main (func, text = handler(input('>>>'))), т.к. handler возвращает 2
 # и теперь нужно добавить в каждую ф-цию параметр *args, потому что в ф-ции теперь нужно передавать этот параметр тоже
 
-    
+
 def clean_func(*args, **kwargs):
     contacts = kwargs['contacts']
     main_path = ""
@@ -266,11 +266,11 @@ def clean_func(*args, **kwargs):
     if main_path != "":
         try:
             sort_files_in_folder(main_path)
-            return 'Сортування завершено!', contacts
+            return 'Sorted is ended!', contacts
         except FileNotFoundError:
-            return 'Шлях вказано не корректно. Такої папки не існує.', contacts
+            return 'The path is not correctly. No such folder exists.', contacts
     else:
-        return 'Не вказано шлях до папки.', contacts
+        return 'No folder path specified.', contacts
 
 
 # Создаем словарь MODES из всех промежуточных ф-ций (каррирование)

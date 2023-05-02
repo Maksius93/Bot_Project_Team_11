@@ -34,8 +34,8 @@ class Name(Field):
 
 # поле с телефоном (отказалась от наследования, т.к. были ошибки
 class Phone(Field):
-    def __init__(self, phone = None):
-# иначе не унаследуются методы
+    def __init__(self, phone=None):
+        # иначе не унаследуются методы
         super().__init__(phone)
         self.__phone = None
         self.phone = phone
@@ -46,7 +46,7 @@ class Phone(Field):
 
     @phone.setter
     def phone(self, value):
-        if len(value) <= 5:
+        if len(value) <= 5 or len(value) > 13:
             raise ValueError('Phone number must have more then 5 digits')
         self.__phone = value
 
@@ -70,12 +70,14 @@ class Birthday(Field):
             datetime.strptime(value, '%d %B %Y')
             self.__bday = value
         except ValueError:
-            raise ValueError(f'Write birthday in format like "27 August 1987"') from None
-
+            raise ValueError(
+                f'Write birthday in format like "27 August 1987"') from None
 
     # добавление/удаление/редактирование
+
+
 class Record:
-    def __init__(self, name: Name, phones: list[Phone] = None, bday = None):
+    def __init__(self, name: Name, phones: list[Phone] = None, bday=None):
         self.name = name
         self.phones = phones
         self.bday = bday
@@ -97,6 +99,10 @@ class Record:
             return f"Phone number {old_phone} has been substituted with {new_phone} for contact {self.name}"
         return f'{old_phone} not in list'
 
+    # def add_bday(self, bday: Birthday):
+    #     self.bday = bday
+    #     return f"Contact {self.name} with {bday} phone number has been added"
+
     def days_to_birthday(self):
         if not self.bday:
             return "Birthdate not set."
@@ -105,15 +111,15 @@ class Record:
         bday_day = bday.day
         bday_month = bday.month
         bday_year = bday.year
-        bday_cur_Y = datetime(year = now.year, month = bday_month, day = bday.day)
+        bday_cur_Y = datetime(year=now.year, month=bday_month, day=bday.day)
         diff = bday_cur_Y - now
         if (bday_cur_Y - now).days >= 0:
             diff = bday_cur_Y - now
         if (bday_cur_Y - now).days < 0:
-            bday_next_Y = datetime(year = now.year + 1, month = bday_month, day = bday.day)
+            bday_next_Y = datetime(
+                year=now.year + 1, month=bday_month, day=bday.day)
             diff = bday_next_Y - now
         return f'{self.name}, {self.bday}: {diff.days} days left to your birthday'
-
 
     def __str__(self):
         return f'{self.phones}'
@@ -166,8 +172,8 @@ class AddressBook(UserDict):
         data = {}
         for value in self.data.values():
             data.update({str(value.name): {"name": str(value.name),
-                                      "phones":[str(p) for p in value.phones],
-                                      "bday": str(value.bday)}})
+                                           "phones": [str(p) for p in value.phones],
+                                           "bday": str(value.bday)}})
             # self.data[key] = [[str(phone) for phone in self.data[key][0]],self.data[key][1]]
         return data
 
@@ -189,15 +195,18 @@ class AddressBook(UserDict):
                 # превращаем объект класса Birthday в дату
                 date = datetime.strptime(value.get('bday').value, '%d %B %Y')
                 # превращаем в дату текущего года
-                bday = datetime.strptime(f"{date.strftime(('%d %B'))} {datetime.now().year}", '%d %B %Y').date()
+                bday = datetime.strptime(
+                    f"{date.strftime(('%d %B'))} {datetime.now().year}", '%d %B %Y').date()
                 days_left = (bday-future_date).days
                 if days_left == 0:
-                    weeks_dict[f'In {x} days from today'].append(value.name.value)
+                    weeks_dict[f'In {x} days from today'].append(
+                        value.name.value)
                 elif days_left == 1:
-                    weeks_dict[f'Next day after {x} days from today'].append(value.name.value)
+                    weeks_dict[f'Next day after {x} days from today'].append(
+                        value.name.value)
                 elif 1 < days_left <= 7:
-                    weeks_dict[bday.strftime('%A, %d %B')].append(value.name.value)
-
+                    weeks_dict[bday.strftime('%A, %d %B')].append(
+                        value.name.value)
 
         output_str = ''
         if weeks_dict:
@@ -206,11 +215,6 @@ class AddressBook(UserDict):
                 output_str += f'{day}: {contacts_str}\n'
             return output_str
         return f'There are no birthdays in {x} days from today + 7 days after'
-
-
-
-
-
 
     def __repr__(self):
         return str(self)
