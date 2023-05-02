@@ -1,8 +1,10 @@
 import json
+import re
+from pathlib import Path
 # эта ошибка возникала при пустом файле contacts.json, ментор посоветовал импортировать ее явно
 from json.decoder import JSONDecodeError
-import re
 from src_classes import Name, Phone, Record, Birthday, AddressBook
+from sort import sort_files_in_folder
 
 
 # Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
@@ -253,6 +255,23 @@ def handler(text):
 # и обязательно добавляем 2-ю переменную в ф-и Main (func, text = handler(input('>>>'))), т.к. handler возвращает 2
 # и теперь нужно добавить в каждую ф-цию параметр *args, потому что в ф-ции теперь нужно передавать этот параметр тоже
 
+    
+def clean_func(*args, **kwargs):
+    contacts = kwargs['contacts']
+    main_path = ""
+    for item in list(args):
+        if "\\" in item:
+            main_path = Path(item)
+            break
+    if main_path != "":
+        try:
+            sort_files_in_folder(main_path)
+            return 'Сортування завершено!', contacts
+        except FileNotFoundError:
+            return 'Шлях вказано не корректно. Такої папки не існує.', contacts
+    else:
+        return 'Не вказано шлях до папки.', contacts
+
 
 # Создаем словарь MODES из всех промежуточных ф-ций (каррирование)
 MODES = {"hello": hello_func,
@@ -268,6 +287,7 @@ MODES = {"hello": hello_func,
          "close": exit_func,
          "exit": exit_func,
          "bye": exit_func,
+         "clean": clean_func,
          ".": exit_func}
 
 
