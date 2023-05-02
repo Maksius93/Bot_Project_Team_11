@@ -3,7 +3,7 @@ import json
 from json.decoder import JSONDecodeError
 import re
 from src_classes import Name, Phone, Record, Birthday, AddressBook
-
+from notes_classes import Note, NoteBook, Tag
 
 
 
@@ -235,6 +235,40 @@ def handler(text):
 # и обязательно добавляем 2-ю переменную в ф-и Main (func, text = handler(input('>>>'))), т.к. handler возвращает 2
 # и теперь нужно добавить в каждую ф-цию параметр *args, потому что в ф-ции теперь нужно передавать этот параметр тоже
 
+def add_note(*args, **kwargs):
+    notebook: NoteBook = kwargs["notebook"]
+    title = ""
+    try:
+        if args[0]:
+            title = ' '.join(args)
+    except IndexError:
+        title = input("Введіть заголовок нотатку :")
+
+    text = input("Введіть текст нотатку :")
+    str_tags = input("Введіть теги нотатку через кому :")
+    tags = [Tag(tag.strip()) for tag in str_tags.split()]
+    nt = Note(title=title, text=text, tags=tags)
+    notebook.add_notes(nt)
+    return f"Note '{title}' successfully added", notebook
+
+def display_note(*args, **kwargs):
+    notebook: NoteBook = kwargs["notebook"]
+    if notebook:
+        if len(args) > 0:
+            try:
+                records_num = int(args[0].strip())
+                for note in notebook.paginator(records_num):
+                    return note, notebook
+            except ValueError:
+                pass
+        for note in notebook.paginator(notes_num = len(notebook)):
+            return note, notebook
+    return "No notes", notebook
+
+def find_note(*args, **kwargs):
+    notebook: NoteBook = kwargs["notebook"]
+    result = notebook.find(args[0])
+    return '\n'.join(result) , notebook
 
 # Создаем словарь MODES из всех промежуточных ф-ций (каррирование)
 MODES = {"hello": hello_func,
@@ -250,21 +284,31 @@ MODES = {"hello": hello_func,
          "close": exit_func,
          "exit": exit_func,
          "bye": exit_func,
+         "note": add_note,
+         "fnote": find_note,
+         "displaynote": display_note,
          ".": exit_func}
 
+NOTE_MODES = [add_note, display_note, find_note]
 
 # Передаем имя файла и путь к файлу с контактами в качестве аргументов
 def main(file_name):
     # делаем словарь экземпляром объекта AddressBook, и все, contacts только тут, не нужно делать то же самое и  перезаписывать в ф-циях
     contacts = AddressBook()
     contacts.from_dict(read_contacts(file_name))
+    # Загрузка NoteBook
+    notebook = NoteBook()
+
     while True:
         # Ф-я handler проверяет, является ли введенный текст командой, сверяясь со словарем MODES,
         # и возвращает нужную ф-ю, а также список из текста после команды
         func, text = handler(input('>>>'))
         # можно просто result, но так легче масштабировать, перезаписывая в contacts
         # вместо исходного словаря результат выполнения ф-ций
-        if func:
+        if func in NOTE_MODES:
+            result, notebook = func(*text, notebook = notebook)
+            print(result)
+        elif func:
             result, contacts = func(*text, contacts = contacts)
             print(result)
         if func == exit_func:
