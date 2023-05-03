@@ -2,14 +2,13 @@
 import json
 import re
 from pathlib import Path
-# эта ошибка возникала при пустом файле contacts.json, ментор посоветовал импортировать ее явно
 from json.decoder import JSONDecodeError
-from src_classes import Name, Phone, Record, Birthday, AddressBook
-from note_classes import Note, NoteBook, Tag
-from sort import sort_files_in_folder
+from bot.src_classes import Name, Phone, Record, Birthday, AddressBook
+from bot.note_classes import Note, NoteBook, Tag
+from bot.sort import sort_files_in_folder
+# from rich import print
 
 
-# Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
 def read_contacts(file_name):
     try:
         with open(file_name, 'r') as f:
@@ -19,7 +18,6 @@ def read_contacts(file_name):
     return contacts
 
 
-# Записываем контакты в файл
 def save_contacts(file_name, contacts):
     with open(file_name, 'w') as f:
         if contacts:
@@ -70,9 +68,6 @@ def Error_note(func):
         except AttributeError:
             ...
     return inner
-    
-# contacts возвращаем для того, чтобы сигнатура ф-й была одинаковая,
-# kwargs['contacts']: 'contacts' это также ключ, по к-му можно найти в kwargs словарь contacts
 
 
 def hello_func(*args, **kwargs):
@@ -96,16 +91,11 @@ def help_func(*args, **kwargs):
             ''', contacts
 
 
-# передаем словарь Contacts из ф-и main в качестве аргумента
 @Error_func
 def add_func(*args, **kwargs):
-    # делаем наши переменные объектами соответствующих классов
-    # и переносим их с блока try в начало ф-и
-    # contacts делается экземпляром класса в мейне
     contacts = kwargs['contacts']
     name = Name(args[0].strip().lower())
     phones = []
-    emails = []
     bday = None
     if args[1:]:
         for arg in args[1:]:
@@ -113,25 +103,19 @@ def add_func(*args, **kwargs):
                 match_phone = re.findall(
                     r'\b\+?\d{1,3}-?\d{1,3}-?\d{1,4}\b', str(arg))
                 if match_phone:
-                    # создаем экземпляры класса Phone из match_phone и добавляем их в список phones
                     phones.extend([Phone(phone.strip().lower())
                                   for phone in match_phone])
             match_bd = re.search(r'\b(\d{1,2})\s(January|February|March|April|May|June|July|August|September|October|November|December)\s(\d{4})\b', ' '.join(
                 args[1:]), re.IGNORECASE)
             if match_bd:
-                bday = Birthday(f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}")
-            if match_email:
-                emails.extend(email.strip() for email in match_email)
-    # создаем новые переменные rec, phones и bday, чтобы работать с классом Record
-    rec = Record(name, phones, bday, emails)
-    # Забираем первый и второй элемент, т.к. ф-я handler, которую вызываем в мейне,
-    # возвращает ф-ю и очищенный от команды список, к-й распаковывается через * в
-    # позиционные параметры add_func (в мейне): result, contacts = func(*text, Contacts=Contacts)
-    # без маг. метода hash в классе тут будет ошибк, без str не работает!
+                bday = f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}"
+    rec = Record(name, phones, bday)
+
     if not contacts.get(str(name)):
         contacts.add_record(rec)
-        return f"Contact {name} with phone {phones} and birthday '{bday}' and email {emails} successfully added", contacts
-    # вместо contacts[name] = phone присваиваем метод класса AddressBook
+        save_contacts(file_name, contacts.to_dict())
+        return f"Contact {name} with phone {phones} and birthday '{bday}' successfully added", contacts
+
     if phones:
         contact = contacts.get(str(name))
         contact.add_phone(*phones)
@@ -139,23 +123,7 @@ def add_func(*args, **kwargs):
         return f"Phone {phones} added to contact {name}.", contacts
     elif bday:
         contact = contacts.get(str(name))
-        contact.bday = bday
-        save_contacts(file_name, contacts.to_dict())
-        return f"Birthday {bday} added to contact {name}.", contacts
-    contact = contacts.get(str(name))
-    contact.add_phone(*phones)
-    contact.add_phone(*emails)
-    save_contacts(file_name, contacts.to_dict())
-    return f"Phone {phones} and email {emails} added to contact {name}.", contacts
-   
-    if phones:
-        contact = contacts.get(str(name))
-        contact.add_phone(*phones)
-        save_contacts(file_name, contacts.to_dict())
-        return f"Phone {phones} added to contact {name}.", contacts
-    elif bday:
-        contact = contacts.get(str(name))
-        contact.bday = bday
+        contact.bday = Birthday(bday)
         save_contacts(file_name, contacts.to_dict())
         return f"Birthday {bday} added to contact {name}.", contacts
 
@@ -163,24 +131,20 @@ def add_func(*args, **kwargs):
 @Error_func
 def change_func(*args, **kwargs):
     contacts = kwargs['contacts']
-# Забираем первый и второй элемент, т.к. ф-я handler, которую вызываем в мейне,
-# возвращает ф-ю и очищенный от команды список, к-й распаковывается через * в
-# позиционные параметры add_funс (в мейне): result = func(*text, Contacts=Contacts)
+
     if args[0]:
         name = Name(args[0].strip().lower())
     else:
         raise IndexError()
-    # буде на першій позиції в аргсах
+
     old_phone = Phone(args[1].strip().lower())
-    # буде на другій позиції в аргсах
     new_phone = Phone(args[2].strip().lower())
-    # если имени нет в словаре, оно добавится, если нет - поменяется номер
-    # метод edit_phone у нас для списка, мы извлекаем список по ключу словаря
     rec = contacts.get(str(name))
+
     if rec:
         rec.edit_phone(old_phone, new_phone)
         save_contacts(file_name, contacts.to_dict())
-    # без str не работает, либо rec = contacts.get(name.value)
+
         return f"Phone for contact {name} changed successfully.\nOld phone {old_phone}, new phone {new_phone}", contacts
     return f"Contact {name} doesn't exist", contacts
 
@@ -188,11 +152,7 @@ def change_func(*args, **kwargs):
 @Error_func
 def del_func(*args, **kwargs):
     contacts = kwargs['contacts']
-# Забираем первый и второй элемент, т.к. ф-я handler, которую вызываем в мейне,
-# возвращает ф-ю и очищенный от команды список, к-й распаковывается через * в
-# позиционные параметры add_funс (в мейне): result = func(*text, Contacts=Contacts)
     name = Name(args[0].strip().lower())
-    # без str не находит ключ! (либо добавлять value)
     contacts.pop(str(name))
     save_contacts(file_name, contacts.to_dict())
     return f"Contact {name} successfully deleted", contacts
@@ -208,8 +168,8 @@ def phone_func(*args, **kwargs):
 def bday_func(*args, **kwargs):
     contacts = kwargs['contacts']
     name = Name(args[0].strip().lower())
-# метод применяем к экземпляру класса
     rec = contacts.get(str(name))
+    print(type(rec))
     if rec:
         result = rec.days_to_birthday()
         return result, contacts
@@ -273,21 +233,12 @@ def exit_func(*args, **kwargs):
     contacts = kwargs['contacts']
     return "Bye", contacts
 
-# Ф-я handler проверяет, является ли введенный текст командой, сверяясь со словарем MODES,
-# и возвращает нужную ф-ю, а также текст после команды
-# никаких изменений в связи с перестройкой на классы
-
 
 def handler(text):
     for command, func in MODES.items():
         if text.lower().startswith(command):
             return func, text.replace(command, '').strip().split()
-    # else тут нельзя, он вернет только 1-ю ф-ю словаря MODES, если ей соответствует введенная
-    # команда, но следующей ф-ции она уже соответствовать не будет, поэтому вернет unknown_command для всех остальных
     return unknown_command, []
-# у ретернов должна быть одинаковая структура, поэтому после 2-го возвращаем [] (None приводит к ошибке, потому что его нельзя распаковать *),
-# и обязательно добавляем 2-ю переменную в ф-и Main (func, text = handler(input('>>>'))), т.к. handler возвращает 2
-# и теперь нужно добавить в каждую ф-цию параметр *args, потому что в ф-ции теперь нужно передавать этот параметр тоже
 
 
 def clean_func(*args, **kwargs):
@@ -305,7 +256,7 @@ def clean_func(*args, **kwargs):
             return 'The path is not correctly. No such folder exists.', contacts
     else:
         return 'No folder path specified.', contacts
-    
+
 @Error_note
 def add_note(*args, **kwargs):
     """
@@ -440,15 +391,9 @@ def note_changes(*args, **kwargs):
         case _:
             raise IndexError('Введіть коррекно дані') from None
 
-
-def find_tag(*args, **kwargs): 
-   ...
-def sort_tag():
-    ...
-
 # список функцій пакеу нотатків]
 NOTE_MODES = [add_note, display_note, find_note, remove_note, show_note,note_changes, find_tag]
-# Создаем словарь MODES из всех промежуточных ф-ций (каррирование)
+
 MODES = {"hello": hello_func,
          "add": add_func,
          "change": change_func,
@@ -469,29 +414,20 @@ MODES = {"hello": hello_func,
          "rnote":remove_note,
          "snote": show_note,
          "cnote": note_changes,
-         "ftag":find_tag,
          ".": exit_func}
 
 file_name = 'contacts.json'
 note_file = 'note.json'
-# Передаем имя файла и путь к файлу с контактами в качестве аргументов
-
 
 def main():
-    # делаем словарь экземпляром объекта AddressBook, и все, contacts только тут, не нужно делать то же самое и  перезаписывать в ф-циях
     contacts = AddressBook()
     contacts.from_dict(read_contacts(file_name))
     result, contacts = help_func(contacts=contacts)
-
-    # Загрузка NoteBook
     notebook = NoteBook()
     notebook.from_dict(read_contacts(note_file))
     print(result)
     while True:
-        # Ф-я handler проверяет, является ли введенный текст командой, сверяясь со словарем MODES,
-        # и возвращает нужную ф-ю, а также список из текста после команды
         func, text = handler(input('>>>'))
-        # можно просто result, но так легче масштабировать, перезаписывая в contacts
         if func in NOTE_MODES:
             result, notebook = func(*text, notebook = notebook)
             print(result)
@@ -505,4 +441,8 @@ def main():
 
 # Проверяем, что скрипт запущен как основной
 if __name__ == '__main__':
+    main()
+
+if __name__ == '__main__':
+
     main()
