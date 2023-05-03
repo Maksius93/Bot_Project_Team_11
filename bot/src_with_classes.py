@@ -392,15 +392,18 @@ def note_changes(*args, **kwargs):
     notebook: NoteBook = kwargs["notebook"]
     try:
         if args[0]:
-            title = ' '.join(args)
+            title = ' '.join(args).lower()
     except IndexError:
         raise IndexError('Введіть корретно заголовок') from None
     
     note: Note = None
 
     for k, v in notebook.items():
-        if title == k:
+        if title == k.lower():
             note = v
+    
+    if note == None:
+        return "Note not found", notebook
 
     input_text = "Якщо бажаєте змінити заголовк нажтіть '1' якщо текст ноатку нажміть '2' \
 а якщо теги тоді '3' "
@@ -410,6 +413,8 @@ def note_changes(*args, **kwargs):
         case '1':
             old_title = note.title
             new_title = input('Введіь новий заголовок: ')
+            if new_title == '':
+                raise IndexError("Заголовок не оже бути пустим")
             note.change_title(new_title)
             notebook.pop(old_title)
             notebook[new_title] = note
@@ -426,12 +431,11 @@ def note_changes(*args, **kwargs):
 
         case '3':
             old_tags = note.tags
-            new_tags = input('Введіь новий текст: ')
+            new_tags = input('Введіь нові теги через кому: ')
             new_tags = [Tag(tag.strip()) for tag in new_tags.split(',')]   
             note.change_tags(new_tags)
             notebook[note.title] = note
             save_contacts(note_file, notebook.to_dict())
-            print(note.tags)
             return f"Успішно замінили {old_tags} на {new_tags}", notebook
         case _:
             raise IndexError('Введіть коррекно дані') from None
