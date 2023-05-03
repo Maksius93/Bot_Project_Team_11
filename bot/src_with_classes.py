@@ -93,7 +93,7 @@ def add_func(*args, **kwargs):
             match_bd = re.search(r'\b(\d{1,2})\s(January|February|March|April|May|June|July|August|September|October|November|December)\s(\d{4})\b', ' '.join(
                 args[1:]), re.IGNORECASE)
             if match_bd:
-                bday = f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}"
+                bday = Birthday(f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}")
     # создаем новые переменные rec, phones и bday, чтобы работать с классом Record
     rec = Record(name, phones, bday)
     # Забираем первый и второй элемент, т.к. ф-я handler, которую вызываем в мейне,
@@ -112,7 +112,7 @@ def add_func(*args, **kwargs):
         return f"Phone {phones} added to contact {name}.", contacts
     elif bday:
         contact = contacts.get(str(name))
-        contact.bday = Birthday(bday)
+        contact.bday = bday
         save_contacts(file_name, contacts.to_dict())
         return f"Birthday {bday} added to contact {name}.", contacts
 
