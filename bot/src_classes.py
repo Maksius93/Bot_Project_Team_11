@@ -75,22 +75,52 @@ class Birthday(Field):
 
     # добавление/удаление/редактирование
 
+class Email(Field):
+    def __init__(self, email=None):
+        # иначе не унаследуются методы
+        super().__init__(email)
+        self.__email = None
+        self.email = email
 
+    @property
+    def email(self):
+        return self.__email
+
+    @email.setter
+    def email(self, value):
+        if value.find("@") == -1:
+            raise ValueError('Email must have special symbol @')
+        self.__email = value
+
+
+# добавление/удаление/редактирование
 class Record:
-    def __init__(self, name: Name, phones: list[Phone] = None, bday=Birthday | None):
+    def __init__(self, name: Name, phones: list[Phone] = None, bday = None, emails: list[Email] = None):
         self.name = name
         self.phones = phones
+        self.emails = emails
         self.bday = bday
 
     def add_phone(self, phone: Phone):
         self.phones.append(phone)
         return f"Contact {self.name} with {phone} phone number has been added"
 
+    def add_email(self, email: Email):
+        self.emails.append(email)
+        return f"Contact {self.name} with {email} email has been added"
+
+
     def del_phone(self, phone: Phone):
         for phone in self.phones:
             self.phones.remove(phone)
             return f"Phone number {phone} has been deleted from contact {self.name}"
         return f'{phone} not in list'
+
+    def del_email(self, email: Email):
+        for email in self.emails:
+            self.emails.remove(email)
+            return f"Email {email} has been deleted from contact {self.name}"
+        return f'{email} not in list'
 
     def edit_phone(self, old_phone: Phone, new_phone: Phone):
         if old_phone in self.phones:
@@ -99,23 +129,30 @@ class Record:
             return f"Phone number {old_phone} has been substituted with {new_phone} for contact {self.name}"
         return f'{old_phone} not in list'
 
+    def edit_email(self, old_email: Email, new_email: Email):
+        if old_email in self.emails:
+            self.del_email(old_email)
+            self.add_email(new_email)
+            return f"Email {old_email} has been substituted with {new_email} for contact {self.name}"
+        return f'{old_email} not in list'
+
     def days_to_birthday(self):
         if not self.bday:
             return "Birthdate not set."
-        bday = datetime.strptime(str(self.bday), '%d %B %Y')
+        bday = datetime.strptime(self.bday.value, '%d %B %Y')
         now = datetime.now()
         bday_day = bday.day
         bday_month = bday.month
         bday_year = bday.year
-        bday_cur_Y = datetime(year=now.year, month=bday_month, day=bday.day)
-        diff = bday_cur_Y - now
+        bday_cur_Y = datetime(year = now.year, month = bday_month, day = bday.day)
+        diff = bday_cur_Y - now + timedelta(days = 1)
         if (bday_cur_Y - now).days >= 0:
-            diff = bday_cur_Y - now
+            diff = bday_cur_Y - now + timedelta(days = 1)
         if (bday_cur_Y - now).days < 0:
-            bday_next_Y = datetime(
-                year=now.year + 1, month=bday_month, day=bday.day)
-            diff = bday_next_Y - now
+            bday_next_Y = datetime(year = now.year + 1, month = bday_month, day = bday.day)
+            diff = bday_next_Y - now + timedelta(days = 1)
         return f'{self.name}, {self.bday}: {diff.days} days left to your birthday'
+
 
     def __str__(self):
         return f'{self.phones}'
@@ -126,7 +163,6 @@ class Record:
     # добавляем метод get для ф-ии bday_on_week_func()
     def get(self, key):
         return getattr(self, key)
-
 
 # поиск по записям
 class AddressBook(UserDict):
@@ -169,6 +205,7 @@ class AddressBook(UserDict):
         for value in self.data.values():
             data.update({str(value.name): {"name": str(value.name),
                                            "phones": [str(p) for p in value.phones],
+                                           "emails": [str(p) for p in value.emails],
                                            "bday": str(value.bday)}})
             # self.data[key] = [[str(phone) for phone in self.data[key][0]],self.data[key][1]]
         return data
@@ -191,18 +228,14 @@ class AddressBook(UserDict):
                 # превращаем объект класса Birthday в дату
                 date = datetime.strptime(value.get('bday').value, '%d %B %Y')
                 # превращаем в дату текущего года
-                bday = datetime.strptime(
-                    f"{date.strftime(('%d %B'))} {datetime.now().year}", '%d %B %Y').date()
-                days_left = (bday-future_date).days
+                bday = datetime.strptime(f"{date.strftime(('%d %B'))} {datetime.now().year}", '%d %B %Y').date()
+                days_left = (bday - future_date).days
                 if days_left == 0:
-                    weeks_dict[f'In {x} days from today'].append(
-                        value.name.value)
+                    weeks_dict[f'In {x} days from today'].append(value.name.value)
                 elif days_left == 1:
-                    weeks_dict[f'Next day after {x} days from today'].append(
-                        value.name.value)
+                    weeks_dict[f'Next day after {x} days from today'].append(value.name.value)
                 elif 1 < days_left <= 7:
-                    weeks_dict[bday.strftime('%A, %d %B')].append(
-                        value.name.value)
+                    weeks_dict[bday.strftime('%A, %d %B')].append(value.name.value)
 
         output_str = ''
         if weeks_dict:
