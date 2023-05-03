@@ -9,7 +9,7 @@ setup(
     packages=find_namespace_packages(),
     entry_points = {'console_scripts': ['Hello = bot.src_with_classes:main']},
     install_requires=[
-        'transliterate'
+        'transliterate', 'rich'
         
     ],
 )

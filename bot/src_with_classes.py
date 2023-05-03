@@ -5,7 +5,7 @@ from pathlib import Path
 from json.decoder import JSONDecodeError
 from bot.src_classes import Name, Phone, Record, Birthday, AddressBook
 from bot.sort import sort_files_in_folder
-
+from rich import print
 
 # Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
 def read_contacts(file_name):
