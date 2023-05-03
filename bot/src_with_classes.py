@@ -88,6 +88,12 @@ def help_func(*args, **kwargs):
             after the date you want to check.
             To get all contacts in your notebook type "show all/show", to get n records, type "show n" wo quotes.
             To delete contact type "delete" and contact`s name after.
+            To add a new note, enter the command 'note' followed by the title.
+            To find something in notes, enter the command 'fnote'  with something words
+            To display all notes, enter 'display'.
+            To delete a note, enter 'rnote' followed by the note's title.
+            To display a specific note, enter 'snote' followed by the note's title.
+            To edit a note, enter 'cnote' followed by the note's title.
             To exit and save changes type "bye"/"close"/"exit"/"."  
             ''', contacts
 
