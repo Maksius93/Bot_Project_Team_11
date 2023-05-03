@@ -125,7 +125,7 @@ class NoteBook(UserDict):
             # превращаем в список ключи словаря и слайсим
             result_keys = list(self.data)[start: start + notes_num]
             # превращаем список ключей словаря в список строк с форматом "ключ : [значение]"
-            result_list = [f"{key} : {self.data.get(key).title},{self.data.get(key).tags}" for key in result_keys]
+            result_list = [f"{key}: {self.data.get(key).title},{self.data.get(key).tags}" for key in result_keys]
             if not result_keys:
                 break
             yield '\n'.join(result_list)

@@ -3,8 +3,6 @@ import re
 from pathlib import Path
 # эта ошибка возникала при пустом файле contacts.json, ментор посоветовал импортировать ее явно
 from json.decoder import JSONDecodeError
-from bot.src_classes import Name, Phone, Record, Birthday, AddressBook
-from bot.sort import sort_files_in_folder
 
 
 # Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
@@ -46,6 +44,29 @@ def Error_func(func):
             ...
     return inner
 
+def Error_note(func):
+    def inner(*args, **kwargs):
+        notebook = NoteBook(kwargs['notebook'])
+        
+        if not args:
+            IndexError()
+
+        else:
+            name = Name(args[0].strip().lower())
+
+        try:
+            return func(*args, **kwargs)
+        except IndexError as exc:
+            return f'{exc}', notebook
+        except KeyError:
+            return f'Contact {name} is absent', notebook
+        except TypeError as e:
+            return (f'If you try to add new contact, contact {name} is already exists.\n'
+                    f'If you try to edit contact, contact {name} doesn`t exist'), notebook
+        except AttributeError:
+            ...
+    return inner
+    
 # contacts возвращаем для того, чтобы сигнатура ф-й была одинаковая,
 # kwargs['contacts']: 'contacts' это также ключ, по к-му можно найти в kwargs словарь contacts
 
@@ -262,8 +283,143 @@ def clean_func(*args, **kwargs):
             return 'The path is not correctly. No such folder exists.', contacts
     else:
         return 'No folder path specified.', contacts
+    
+@Error_note
+def add_note(*args, **kwargs):
+    """
+    Додає нотатки:
+    поетапно приймає від користувача заголовок, текст нотатки, теги
+    
+    """
+    notebook: NoteBook = kwargs["notebook"]
+   
+    try:
+        if args[0]:
+            title = ' '.join(args)
+    except IndexError:
+        raise IndexError('Заголовок не може бути пустим') from None
+
+    text = input("Введіть текст нотатку :")
+    str_tags = input("Введіть теги нотатку через кому :")
+    tags = [Tag(tag.strip()) for tag in str_tags.split(',')]
+    nt = Note(title=title, text=text, tags=tags)
+    notebook.add_notes(nt)
+    save_contacts(note_file, notebook.to_dict())
+    return f"Note '{title}' successfully added", notebook
+
+def display_note(*args, **kwargs):
+    """Виводить список заголовків всіх нотатків"""
+    notebook: NoteBook = kwargs["notebook"]
+    if notebook:
+        if len(args) > 0:
+            try:
+                records_num = int(args[0].strip())
+                for note in notebook.paginator(records_num):
+                    return note, notebook
+            except ValueError:
+                pass
+        for note in notebook.paginator(notes_num = len(notebook)):
+            return note, notebook
+    return "No notes", notebook
+
+def find_note(*args, **kwargs):
+    """Пошук нотатків """
+    notebook: NoteBook = kwargs["notebook"]
+    result = notebook.find(args[0])
+    return '\n'.join(result) , notebook
+
+def remove_note(*args, **kwargs):
+    """ 
+        Видаляє нотатку по заголовку. Треба ввести заголовок повністю
+    """
+    notebook: NoteBook = kwargs["notebook"]
+    try:
+        word , notebook = notebook.remove_note(' '.join(args) if len(args) > 1 else args[0])
+    except IndexError:
+        return 'Note not found', notebook
+    save_contacts(note_file, notebook.to_dict())
+    return f'{word.capitalize()} successfully remove', notebook
 
 
+@Error_note
+def show_note(*args, **kwargs):
+    """ Виводить нотатку потрібно ввести повний заголовок"""
+    notebook: NoteBook = kwargs["notebook"]
+   
+    try:
+        if args[0]:
+            title = ' '.join(args)
+    except IndexError:
+        raise IndexError('Введіть корретно заголовок') from None
+
+    for note in notebook.values():
+        if title == note.title:
+            title = f"Title: {note.title}"
+            text = f"Text: {note.text}"
+            tags = f"Tags: {','.join(note.tags)}"
+            return title + '\n' + text + "\n" + tags, notebook
+    return "Note not found", notebook
+
+
+@Error_note
+def note_changes(*args, **kwargs):
+    """ Редагує поля нотатку """
+    notebook: NoteBook = kwargs["notebook"]
+    try:
+        if args[0]:
+            title = ' '.join(args)
+    except IndexError:
+        raise IndexError('Введіть корретно заголовок') from None
+    
+    note: Note = None
+
+    for k, v in notebook.items():
+        if title == k:
+            note = v
+
+    input_text = "Якщо бажаєте змінити заголовк нажтіть 't' якщо текст ноатку нажміть 'x' \
+а якщо теги тоді 'w' "
+    choice = input(input_text+'\n >>>') 
+
+    match choice:
+        case 't':
+            old_title = note.title
+            new_title = input('Введіь новий заголовок: ')
+            note.change_title(new_title)
+            notebook.pop(old_title)
+            notebook[new_title] = note
+            save_contacts(note_file, notebook.to_dict())
+            return f"Успішно замінили {old_title} на {new_title}", notebook
+        
+        case 'x':
+            old_text = note.text
+            new_text = input('Введіь новий текст: ')
+            note.change_text(new_text)
+            notebook[note.title] = note
+            save_contacts(note_file, notebook.to_dict())
+            return f"Успішно замінили {old_text} на {new_text}", notebook
+
+        case 'w':
+            old_tags = note.tags
+            new_tags = input('Введіь новий текст: ')
+            new_tags = [Tag(tag.strip()) for tag in new_tags.split(',')]   
+            note.change_tags(new_tags)
+            notebook[note.title] = note
+            save_contacts(note_file, notebook.to_dict())
+            print(note.tags)
+            return f"Успішно замінили {old_tags} на {new_tags}", notebook
+        case _:
+            raise IndexError('Введіть коррекно дані') from None
+
+
+def find_tag():
+
+    ...
+def sort_tag():
+    ...
+
+# список функцій пакеу нотатків]
+NOTE_MODES = [add_note, display_note, find_note, remove_note, show_note,note_changes]
 # Создаем словарь MODES из всех промежуточных ф-ций (каррирование)
 MODES = {"hello": hello_func,
          "add": add_func,
@@ -279,9 +435,16 @@ MODES = {"hello": hello_func,
          "exit": exit_func,
          "bye": exit_func,
          "clean": clean_func,
+         "note": add_note,
+         "fnote": find_note,
+         "display": display_note,
+         "rnote":remove_note,
+         "snote": show_note,
+         "cnote": note_changes,
          ".": exit_func}
 
 file_name = 'contacts.json'
+note_file = 'note.json'
 # Передаем имя файла и путь к файлу с контактами в качестве аргументов
 
 
@@ -290,14 +453,20 @@ def main():
     contacts = AddressBook()
     contacts.from_dict(read_contacts(file_name))
     result, contacts = help_func(contacts=contacts)
+
+    # Загрузка NoteBook
+    notebook = NoteBook()
+    notebook.from_dict(read_contacts(note_file))
     print(result)
     while True:
         # Ф-я handler проверяет, является ли введенный текст командой, сверяясь со словарем MODES,
         # и возвращает нужную ф-ю, а также список из текста после команды
         func, text = handler(input('>>>'))
         # можно просто result, но так легче масштабировать, перезаписывая в contacts
-        # вместо исходного словаря результат выполнения ф-ций
-        if func:
+        if func in NOTE_MODES:
+            result, notebook = func(*text, notebook = notebook)
+            print(result)
+        elif func:
             result, contacts = func(*text, contacts=contacts)
             print(result)
         if func == exit_func:
