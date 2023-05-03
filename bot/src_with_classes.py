@@ -3,6 +3,9 @@ import re
 from pathlib import Path
 # эта ошибка возникала при пустом файле contacts.json, ментор посоветовал импортировать ее явно
 from json.decoder import JSONDecodeError
+from src_classes import Name, Phone, Record, Birthday, AddressBook
+from note_classes import Note, NoteBook, Tag
+from sort import sort_files_in_folder
 
 
 # Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
@@ -307,6 +310,7 @@ def add_note(*args, **kwargs):
     save_contacts(note_file, notebook.to_dict())
     return f"Note '{title}' successfully added", notebook
 
+@Error_note
 def display_note(*args, **kwargs):
     """Виводить список заголовків всіх нотатків"""
     notebook: NoteBook = kwargs["notebook"]
@@ -322,12 +326,20 @@ def display_note(*args, **kwargs):
             return note, notebook
     return "No notes", notebook
 
+@Error_note
 def find_note(*args, **kwargs):
     """Пошук нотатків """
     notebook: NoteBook = kwargs["notebook"]
-    result = notebook.find(args[0])
-    return '\n'.join(result) , notebook
+    n = args[0].strip().lower()
+    result = []
+    for key, value in notebook.items():
+        if n in "{} {} {}".format(str(value.title).lower(),
+                                  str(value.text).lower(),
+                                  str(' '.join([str(i) for i in value.tags])).lower()):
+            result.append(f"{key} : {value.title}, {value.text}, {value.tags}")
+    return '\n'.join(result) or f"There are no results with {n}", notebook
 
+@Error_note
 def remove_note(*args, **kwargs):
     """ 
         Видаляє нотатку по заголовку. Треба ввести заголовок повністю
@@ -345,20 +357,14 @@ def remove_note(*args, **kwargs):
 def show_note(*args, **kwargs):
     """ Виводить нотатку потрібно ввести повний заголовок"""
     notebook: NoteBook = kwargs["notebook"]
-   
-    try:
-        if args[0]:
-            title = ' '.join(args)
-    except IndexError:
-        raise IndexError('Введіть корретно заголовок') from None
-
-    for note in notebook.values():
-        if title == note.title:
-            title = f"Title: {note.title}"
-            text = f"Text: {note.text}"
-            tags = f"Tags: {','.join(note.tags)}"
-            return title + '\n' + text + "\n" + tags, notebook
-    return "Note not found", notebook
+    n = args[0].strip().lower()
+    result = []
+    for key, value in notebook.items():
+        if n in "{} {} {}".format(str(value.title).lower(),
+                                  str(value.text).lower(),
+                                  str(' '.join([str(i) for i in value.tags])).lower()):
+            result = (f"{key} : {value.title}, {value.text}, {value.tags}")
+    return f'{result}' or f"There are no results with {n}", notebook
 
 
 @Error_note
@@ -377,12 +383,12 @@ def note_changes(*args, **kwargs):
         if title == k:
             note = v
 
-    input_text = "Якщо бажаєте змінити заголовк нажтіть 't' якщо текст ноатку нажміть 'x' \
-а якщо теги тоді 'w' "
+    input_text = "Якщо бажаєте змінити заголовк нажтіть '1' якщо текст ноатку нажміть '2' \
+а якщо теги тоді '3' "
     choice = input(input_text+'\n >>>') 
 
     match choice:
-        case 't':
+        case '1':
             old_title = note.title
             new_title = input('Введіь новий заголовок: ')
             note.change_title(new_title)
@@ -391,7 +397,7 @@ def note_changes(*args, **kwargs):
             save_contacts(note_file, notebook.to_dict())
             return f"Успішно замінили {old_title} на {new_title}", notebook
         
-        case 'x':
+        case '2':
             old_text = note.text
             new_text = input('Введіь новий текст: ')
             note.change_text(new_text)
@@ -399,7 +405,7 @@ def note_changes(*args, **kwargs):
             save_contacts(note_file, notebook.to_dict())
             return f"Успішно замінили {old_text} на {new_text}", notebook
 
-        case 'w':
+        case '3':
             old_tags = note.tags
             new_tags = input('Введіь новий текст: ')
             new_tags = [Tag(tag.strip()) for tag in new_tags.split(',')]   
@@ -412,14 +418,13 @@ def note_changes(*args, **kwargs):
             raise IndexError('Введіть коррекно дані') from None
 
 
-def find_tag():
-
-    ...
+def find_tag(*args, **kwargs): 
+   ...
 def sort_tag():
     ...
 
 # список функцій пакеу нотатків]
-NOTE_MODES = [add_note, display_note, find_note, remove_note, show_note,note_changes]
+NOTE_MODES = [add_note, display_note, find_note, remove_note, show_note,note_changes, find_tag]
 # Создаем словарь MODES из всех промежуточных ф-ций (каррирование)
 MODES = {"hello": hello_func,
          "add": add_func,
@@ -441,6 +446,7 @@ MODES = {"hello": hello_func,
          "rnote":remove_note,
          "snote": show_note,
          "cnote": note_changes,
+         "ftag":find_tag,
          ".": exit_func}
 
 file_name = 'contacts.json'

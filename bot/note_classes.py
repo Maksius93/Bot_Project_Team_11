@@ -35,7 +35,7 @@ class Note():
         title_str = f'{self.title}'
         text_str = f'{self.text}'
         tags_str = f"{','.join([str(tag) for tag in self.__tags])}"
-        return title_str +'\n' + text_str + '\n' + tags_str
+        return title_str + text_str + tags_str
 
     def add_tag(self, tags):
         new_tag = [tag for tag in tags]
@@ -102,7 +102,7 @@ class NoteBook(UserDict):
             nt = data[note]
             self.add_notes(Note(nt['title'],
                                 nt['text'],
-                                [i for i in nt['tags']]))
+                                [Tag(i) for i in nt['tags']]))
     
     def show_all(self):
         return self.data
@@ -110,10 +110,11 @@ class NoteBook(UserDict):
     def find(self, word: str):
         data = []
         
-        for note in self.data:
-            if word.lower() in note.__repr__().lower():
+        for note in self.data.values():
+            
+            if word.lower() in note.__repr__():
                 data.append(note) 
-        if data:
+        
             return data
         else:
             "Nothing found"    
