@@ -1,10 +1,12 @@
+
 import json
 import re
 from pathlib import Path
 # эта ошибка возникала при пустом файле contacts.json, ментор посоветовал импортировать ее явно
 from json.decoder import JSONDecodeError
-from bot.src_classes import Name, Phone, Record, Birthday, AddressBook
-from bot.sort import sort_files_in_folder
+from src_classes import Name, Phone, Record, Birthday, AddressBook
+from note_classes import Note, NoteBook, Tag
+from sort import sort_files_in_folder
 
 
 # Загружаем словарь из файла или создаем пустой словарь (для сохранения данных)
@@ -46,6 +48,29 @@ def Error_func(func):
             ...
     return inner
 
+def Error_note(func):
+    def inner(*args, **kwargs):
+        notebook = NoteBook(kwargs['notebook'])
+        
+        if not args:
+            IndexError()
+
+        else:
+            name = Name(args[0].strip().lower())
+
+        try:
+            return func(*args, **kwargs)
+        except IndexError as exc:
+            return f'{exc}', notebook
+        except KeyError:
+            return f'Contact {name} is absent', notebook
+        except TypeError as e:
+            return (f'If you try to add new contact, contact {name} is already exists.\n'
+                    f'If you try to edit contact, contact {name} doesn`t exist'), notebook
+        except AttributeError:
+            ...
+    return inner
+    
 # contacts возвращаем для того, чтобы сигнатура ф-й была одинаковая,
 # kwargs['contacts']: 'contacts' это также ключ, по к-му можно найти в kwargs словарь contacts
 
@@ -84,14 +109,17 @@ def add_func(*args, **kwargs):
     bday = None
     if args[1:]:
         for arg in args[1:]:
-            if len(arg)>5:
-                match_phone = re.findall(r'\b\+?\d{1,3}-?\d{1,3}-?\d{1,7}\b', str(arg))
+            if len(arg) > 5:
+                match_phone = re.findall(
+                    r'\b\+?\d{1,3}-?\d{1,3}-?\d{1,4}\b', str(arg))
                 if match_phone:
-                    phones.extend([Phone(phone.strip().lower()) for phone in match_phone])  # создаем экземпляры класса Phone из match_phone и добавляем их в список phones
-            match_bd = re.search(r'\b(\d{1,2})\s(January|February|March|April|May|June|July|August|September|October|November|December)\s(\d{4})\b',' '.join(args[1:]), re.IGNORECASE)
+                    # создаем экземпляры класса Phone из match_phone и добавляем их в список phones
+                    phones.extend([Phone(phone.strip().lower())
+                                  for phone in match_phone])
+            match_bd = re.search(r'\b(\d{1,2})\s(January|February|March|April|May|June|July|August|September|October|November|December)\s(\d{4})\b', ' '.join(
+                args[1:]), re.IGNORECASE)
             if match_bd:
                 bday = Birthday(f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}")
-            match_email = re.findall(r'\b[\w\.-]+@[\w\.-]+\.\w+\b', str(arg))
             if match_email:
                 emails.extend(email.strip() for email in match_email)
     # создаем новые переменные rec, phones и bday, чтобы работать с классом Record
@@ -104,11 +132,32 @@ def add_func(*args, **kwargs):
         contacts.add_record(rec)
         return f"Contact {name} with phone {phones} and birthday '{bday}' and email {emails} successfully added", contacts
     # вместо contacts[name] = phone присваиваем метод класса AddressBook
+    if phones:
+        contact = contacts.get(str(name))
+        contact.add_phone(*phones)
+        save_contacts(file_name, contacts.to_dict())
+        return f"Phone {phones} added to contact {name}.", contacts
+    elif bday:
+        contact = contacts.get(str(name))
+        contact.bday = bday
+        save_contacts(file_name, contacts.to_dict())
+        return f"Birthday {bday} added to contact {name}.", contacts
     contact = contacts.get(str(name))
     contact.add_phone(*phones)
     contact.add_phone(*emails)
     save_contacts(file_name, contacts.to_dict())
     return f"Phone {phones} and email {emails} added to contact {name}.", contacts
+   
+    if phones:
+        contact = contacts.get(str(name))
+        contact.add_phone(*phones)
+        save_contacts(file_name, contacts.to_dict())
+        return f"Phone {phones} added to contact {name}.", contacts
+    elif bday:
+        contact = contacts.get(str(name))
+        contact.bday = bday
+        save_contacts(file_name, contacts.to_dict())
+        return f"Birthday {bday} added to contact {name}.", contacts
 
 
 @Error_func
@@ -256,8 +305,145 @@ def clean_func(*args, **kwargs):
             return 'The path is not correctly. No such folder exists.', contacts
     else:
         return 'No folder path specified.', contacts
+    
+@Error_note
+def add_note(*args, **kwargs):
+    """
+    Додає нотатки:
+    поетапно приймає від користувача заголовок, текст нотатки, теги
+    
+    """
+    notebook: NoteBook = kwargs["notebook"]
+   
+    try:
+        if args[0]:
+            title = ' '.join(args)
+    except IndexError:
+        raise IndexError('Заголовок не може бути пустим') from None
+
+    text = input("Введіть текст нотатку :")
+    str_tags = input("Введіть теги нотатку через кому :")
+    tags = [Tag(tag.strip()) for tag in str_tags.split(',')]
+    nt = Note(title=title, text=text, tags=tags)
+    notebook.add_notes(nt)
+    save_contacts(note_file, notebook.to_dict())
+    return f"Note '{title}' successfully added", notebook
+
+@Error_note
+def display_note(*args, **kwargs):
+    """Виводить список заголовків всіх нотатків"""
+    notebook: NoteBook = kwargs["notebook"]
+    if notebook:
+        if len(args) > 0:
+            try:
+                records_num = int(args[0].strip())
+                for note in notebook.paginator(records_num):
+                    return note, notebook
+            except ValueError:
+                pass
+        for note in notebook.paginator(notes_num = len(notebook)):
+            return note, notebook
+    return "No notes", notebook
+
+@Error_note
+def find_note(*args, **kwargs):
+    """Пошук нотатків """
+    notebook: NoteBook = kwargs["notebook"]
+    n = args[0].strip().lower()
+    result = []
+    for key, value in notebook.items():
+        if n in "{} {} {}".format(str(value.title).lower(),
+                                  str(value.text).lower(),
+                                  str(' '.join([str(i) for i in value.tags])).lower()):
+            result.append(f"{key} : {value.title}, {value.text}, {value.tags}")
+    return '\n'.join(result) or f"There are no results with {n}", notebook
+
+@Error_note
+def remove_note(*args, **kwargs):
+    """ 
+        Видаляє нотатку по заголовку. Треба ввести заголовок повністю
+    """
+    notebook: NoteBook = kwargs["notebook"]
+    try:
+        word , notebook = notebook.remove_note(' '.join(args) if len(args) > 1 else args[0])
+    except IndexError:
+        return 'Note not found', notebook
+    save_contacts(note_file, notebook.to_dict())
+    return f'{word.capitalize()} successfully remove', notebook
 
 
+@Error_note
+def show_note(*args, **kwargs):
+    """ Виводить нотатку потрібно ввести повний заголовок"""
+    notebook: NoteBook = kwargs["notebook"]
+    n = args[0].strip().lower()
+    result = []
+    for key, value in notebook.items():
+        if n in "{} {} {}".format(str(value.title).lower(),
+                                  str(value.text).lower(),
+                                  str(' '.join([str(i) for i in value.tags])).lower()):
+            result = (f"{key} : {value.title}, {value.text}, {value.tags}")
+    return f'{result}' or f"There are no results with {n}", notebook
+
+
+@Error_note
+def note_changes(*args, **kwargs):
+    """ Редагує поля нотатку """
+    notebook: NoteBook = kwargs["notebook"]
+    try:
+        if args[0]:
+            title = ' '.join(args)
+    except IndexError:
+        raise IndexError('Введіть корретно заголовок') from None
+    
+    note: Note = None
+
+    for k, v in notebook.items():
+        if title == k:
+            note = v
+
+    input_text = "Якщо бажаєте змінити заголовк нажтіть '1' якщо текст ноатку нажміть '2' \
+а якщо теги тоді '3' "
+    choice = input(input_text+'\n >>>') 
+
+    match choice:
+        case '1':
+            old_title = note.title
+            new_title = input('Введіь новий заголовок: ')
+            note.change_title(new_title)
+            notebook.pop(old_title)
+            notebook[new_title] = note
+            save_contacts(note_file, notebook.to_dict())
+            return f"Успішно замінили {old_title} на {new_title}", notebook
+        
+        case '2':
+            old_text = note.text
+            new_text = input('Введіь новий текст: ')
+            note.change_text(new_text)
+            notebook[note.title] = note
+            save_contacts(note_file, notebook.to_dict())
+            return f"Успішно замінили {old_text} на {new_text}", notebook
+
+        case '3':
+            old_tags = note.tags
+            new_tags = input('Введіь новий текст: ')
+            new_tags = [Tag(tag.strip()) for tag in new_tags.split(',')]   
+            note.change_tags(new_tags)
+            notebook[note.title] = note
+            save_contacts(note_file, notebook.to_dict())
+            print(note.tags)
+            return f"Успішно замінили {old_tags} на {new_tags}", notebook
+        case _:
+            raise IndexError('Введіть коррекно дані') from None
+
+
+def find_tag(*args, **kwargs): 
+   ...
+def sort_tag():
+    ...
+
+# список функцій пакеу нотатків]
+NOTE_MODES = [add_note, display_note, find_note, remove_note, show_note,note_changes, find_tag]
 # Создаем словарь MODES из всех промежуточных ф-ций (каррирование)
 MODES = {"hello": hello_func,
          "add": add_func,
@@ -273,9 +459,17 @@ MODES = {"hello": hello_func,
          "exit": exit_func,
          "bye": exit_func,
          "clean": clean_func,
+         "note": add_note,
+         "fnote": find_note,
+         "display": display_note,
+         "rnote":remove_note,
+         "snote": show_note,
+         "cnote": note_changes,
+         "ftag":find_tag,
          ".": exit_func}
 
 file_name = 'contacts.json'
+note_file = 'note.json'
 # Передаем имя файла и путь к файлу с контактами в качестве аргументов
 
 
@@ -284,14 +478,20 @@ def main():
     contacts = AddressBook()
     contacts.from_dict(read_contacts(file_name))
     result, contacts = help_func(contacts=contacts)
+
+    # Загрузка NoteBook
+    notebook = NoteBook()
+    notebook.from_dict(read_contacts(note_file))
     print(result)
     while True:
         # Ф-я handler проверяет, является ли введенный текст командой, сверяясь со словарем MODES,
         # и возвращает нужную ф-ю, а также список из текста после команды
         func, text = handler(input('>>>'))
         # можно просто result, но так легче масштабировать, перезаписывая в contacts
-        # вместо исходного словаря результат выполнения ф-ций
-        if func:
+        if func in NOTE_MODES:
+            result, notebook = func(*text, notebook = notebook)
+            print(result)
+        elif func:
             result, contacts = func(*text, contacts=contacts)
             print(result)
         if func == exit_func:
@@ -301,5 +501,4 @@ def main():
 
 # Проверяем, что скрипт запущен как основной
 if __name__ == '__main__':
-
     main()
