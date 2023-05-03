@@ -77,7 +77,7 @@ class Birthday(Field):
 
 
 class Record:
-    def __init__(self, name: Name, phones: list[Phone] = None, bday=None):
+    def __init__(self, name: Name, phones: list[Phone] = None, bday=Birthday | None):
         self.name = name
         self.phones = phones
         self.bday = bday
@@ -102,7 +102,7 @@ class Record:
     def days_to_birthday(self):
         if not self.bday:
             return "Birthdate not set."
-        bday = datetime.strptime(self.bday, '%d %B %Y')
+        bday = datetime.strptime(str(self.bday), '%d %B %Y')
         now = datetime.now()
         bday_day = bday.day
         bday_month = bday.month

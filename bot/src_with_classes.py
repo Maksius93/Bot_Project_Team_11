@@ -161,15 +161,12 @@ def phone_func(*args, **kwargs):
     name = Name(args[0].strip().lower())
     return str(contacts.get(str(name))), contacts
 
-# @Error_func
-
 
 def bday_func(*args, **kwargs):
     contacts = kwargs['contacts']
     name = Name(args[0].strip().lower())
 # метод применяем к экземпляру класса
     rec = contacts.get(str(name))
-    print(type(rec))
     if rec:
         result = rec.days_to_birthday()
         return result, contacts
@@ -178,16 +175,22 @@ def bday_func(*args, **kwargs):
 
 def show_func(*args, **kwargs):
     contacts = kwargs['contacts']
+    if not args:
+        return IndexError("Please write integer number or all"), contacts
+    else:
+        records_num = args[0].strip()
     if contacts:
+        if records_num == "all" or not records_num:
+            for record in contacts.paginator(records_num=len(contacts)):
+                return record, contacts
         if len(args) > 0:
             try:
                 records_num = int(args[0].strip())
                 for record in contacts.paginator(records_num):
                     return record, contacts
             except ValueError:
-                pass
-        for record in contacts.paginator(records_num=len(contacts)):
-            return record, contacts
+                return "The number of contacts for show must be a integer", contacts
+
     return "No contacts", contacts
 
 
@@ -280,6 +283,8 @@ MODES = {"hello": hello_func,
 
 file_name = 'contacts.json'
 # Передаем имя файла и путь к файлу с контактами в качестве аргументов
+
+
 def main():
     # делаем словарь экземпляром объекта AddressBook, и все, contacts только тут, не нужно делать то же самое и  перезаписывать в ф-циях
     contacts = AddressBook()
@@ -302,5 +307,5 @@ def main():
 
 # Проверяем, что скрипт запущен как основной
 if __name__ == '__main__':
-    
+
     main()
