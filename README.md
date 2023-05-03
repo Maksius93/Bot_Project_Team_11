@@ -30,7 +30,3 @@ To delete a note, enter 'rnote' followed by the note's title.
 To display a specific note, enter 'snote' followed by the note's title.
 To edit a note, enter 'cnote' followed by the note's title.
 To exit and save changes type "bye"/"close"/"exit"/"."  
-
-
-
-
