@@ -3,10 +3,10 @@ import json
 import re
 from pathlib import Path
 from json.decoder import JSONDecodeError
-from src_classes import Name, Phone, Record, Birthday, AddressBook
-from note_classes import Note, NoteBook, Tag
-from sort import sort_files_in_folder
-# from rich import print
+from bot.src_classes import Name, Phone, Record, Birthday, AddressBook
+from bot.note_classes import Note, NoteBook, Tag
+from bot.sort import sort_files_in_folder
+from rich import print
 
 
 def read_contacts(file_name):
@@ -79,11 +79,11 @@ def hello_func(*args, **kwargs):
 def help_func(*args, **kwargs):
     contacts = kwargs['contacts']
     return ''' 
+            Hi! This is what i can do:
             To add contacts type "add" and contact`s name after. You can also add phones (>5 digits each), birthdate (format like '27 August 1987' wo quotes), email, notes after name 
             or leave these fields empty. You can also add phone number using this command after contact was created by it`s name. 
             To change contact`s phone number type "change" and contact`s name after, old phone you want to change and new phone (>5 digits) at the end.
             To get contact`s phone numbers type "phone" and contact`s name after.
-            To get contact`s birthday type "bd" and contact`s name after.
             To see all contacts with birthday in next n days from today, type "reminder n" (for example, 'reminder 0' wo quotes). You also`ll get contacts with bithday in next 7 days 
             after the date you want to check.
             To get all contacts in your notebook type "show all/show", to get n records, type "show n" wo quotes.
@@ -415,7 +415,6 @@ MODES = {"hello": hello_func,
          "help": help_func,
          "delete": del_func,
          "phone": phone_func,
-         "bd": bday_func,
          "reminder": get_birthdays_in_x_days,
          "show": show_func,
          "find": find_func,
