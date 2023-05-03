@@ -20,18 +20,17 @@ You can also add phones (>5 digits each), birthdate (format like '27 August 1987
 You can also add phone number using this command after contact was created by it`s name. 
 To change contact`s phone number type "change" and contact's name after, old phone you want to change and new phone (>5 digits) at the end.
 To get contact's phone numbers type "phone" and contact`s name after.
-To get contact's birthday type "bd" and contact`s name after.
 To see all contacts with birthday in next n days from today, type "reminder n" (for example, 'reminder 0' wo quotes). You also`ll get contacts with bithday in next 7 days after the date you want to check.
 To get all contacts in your notebook type "show all/show", to get n records, type "show n" wo quotes.
 To delete contact type "delete" and contact`s name after.
+To add a new note, enter the command 'note' followed by the title.
+To find something in notes, enter the command 'fnote'  with something words
+To display all notes, enter 'display'.
+To delete a note, enter 'rnote' followed by the note's title.
+To display a specific note, enter 'snote' followed by the note's title.
+To edit a note, enter 'cnote' followed by the note's title.
 To exit and save changes type "bye"/"close"/"exit"/"."  
 
 
-
-Downloads botik-0.1.zip (https://github.com/Maksius93/Bot_Project_Team_11)
-Open cmd
-Specify the path to the folder where the archive is located botik-0.1.zip ( like cd/name folder or C:\Users\User\Downloads)
-Write comand: pip install botik-0.1.zip
-Once installed, type Hello That's it, happy using
 
 
