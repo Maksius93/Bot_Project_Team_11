@@ -46,6 +46,7 @@ def Error_func(func):
             ...
     return inner
 
+
 def Error_note(func):
     def inner(*args, **kwargs):
         notebook = NoteBook(kwargs['notebook'])
@@ -68,6 +69,7 @@ def Error_note(func):
         except AttributeError:
             ...
     return inner
+
 
 
 def hello_func(*args, **kwargs):
@@ -419,6 +421,7 @@ MODES = {"hello": hello_func,
 file_name = 'contacts.json'
 note_file = 'note.json'
 
+
 def main():
     contacts = AddressBook()
     contacts.from_dict(read_contacts(file_name))
@@ -439,10 +442,7 @@ def main():
             break
 
 
-# Проверяем, что скрипт запущен как основной
-if __name__ == '__main__':
-    main()
-
 if __name__ == '__main__':
 
     main()
+
