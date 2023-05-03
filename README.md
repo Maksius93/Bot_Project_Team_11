@@ -1,5 +1,6 @@
 # Bot_Project_Team_11
 
+
 Hello, this is a helper bot.
 He knows how to add contacts with phone numbers, date of birth, notes (with hashtags) and carry out various manipulations with them.
 
@@ -27,3 +28,12 @@ To see all contacts with birthday in next n days from today, type "reminder n" (
 To get all contacts in your notebook type "show all/show", to get n records, type "show n" wo quotes.
 To delete contact type "delete" and contact`s name after.
 To exit and save changes type "bye"/"close"/"exit"/"."  
+
+
+
+Downloads botik-0.1.zip (https://github.com/Maksius93/Bot_Project_Team_11)
+Open cmd
+Specify the path to the folder where the archive is located botik-0.1.zip ( like cd/name folder or C:\Users\User\Downloads)
+Write comand: pip install botik-0.1.zip
+Once installed, type Hello That's it, happy using
+
