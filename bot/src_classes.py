@@ -98,13 +98,13 @@ class Record:
         bday_month = bday.month
         bday_year = bday.year
         bday_cur_Y = datetime(year=now.year, month=bday_month, day=bday.day)
-        diff = bday_cur_Y - now
+        diff = bday_cur_Y - now + timedelta(days=1)
         if (bday_cur_Y - now).days >= 0:
-            diff = bday_cur_Y - now
+            diff = bday_cur_Y - now + timedelta(days=1)
         if (bday_cur_Y - now).days < 0:
             bday_next_Y = datetime(
                 year=now.year + 1, month=bday_month, day=bday.day)
-            diff = bday_next_Y - now
+            diff = bday_next_Y - now + timedelta(days=1)
         return f'{self.name}, {self.bday}: {diff.days} days left to your birthday'
 
     def __str__(self):

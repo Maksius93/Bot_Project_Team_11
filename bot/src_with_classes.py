@@ -3,9 +3,9 @@ import json
 import re
 from pathlib import Path
 from json.decoder import JSONDecodeError
-from bot.src_classes import Name, Phone, Record, Birthday, AddressBook
-from bot.note_classes import Note, NoteBook, Tag
-from bot.sort import sort_files_in_folder
+from src_classes import Name, Phone, Record, Birthday, AddressBook
+from note_classes import Note, NoteBook, Tag
+from sort import sort_files_in_folder
 # from rich import print
 
 
@@ -50,7 +50,7 @@ def Error_func(func):
 def Error_note(func):
     def inner(*args, **kwargs):
         notebook = NoteBook(kwargs['notebook'])
-        
+
         if not args:
             IndexError()
 
@@ -69,7 +69,6 @@ def Error_note(func):
         except AttributeError:
             ...
     return inner
-
 
 
 def hello_func(*args, **kwargs):
@@ -110,7 +109,8 @@ def add_func(*args, **kwargs):
             match_bd = re.search(r'\b(\d{1,2})\s(January|February|March|April|May|June|July|August|September|October|November|December)\s(\d{4})\b', ' '.join(
                 args[1:]), re.IGNORECASE)
             if match_bd:
-                bday = f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}"
+                bday = Birthday(
+                    f"{match_bd.group(1)} {match_bd.group(2)} {match_bd.group(3)}")
     rec = Record(name, phones, bday)
 
     if not contacts.get(str(name)):
@@ -125,7 +125,7 @@ def add_func(*args, **kwargs):
         return f"Phone {phones} added to contact {name}.", contacts
     elif bday:
         contact = contacts.get(str(name))
-        contact.bday = Birthday(bday)
+        contact.bday = bday
         save_contacts(file_name, contacts.to_dict())
         return f"Birthday {bday} added to contact {name}.", contacts
 
@@ -259,15 +259,16 @@ def clean_func(*args, **kwargs):
     else:
         return 'No folder path specified.', contacts
 
+
 @Error_note
 def add_note(*args, **kwargs):
     """
     Додає нотатки:
     поетапно приймає від користувача заголовок, текст нотатки, теги
-    
+
     """
     notebook: NoteBook = kwargs["notebook"]
-   
+
     try:
         if args[0]:
             title = ' '.join(args)
@@ -282,6 +283,7 @@ def add_note(*args, **kwargs):
     save_contacts(note_file, notebook.to_dict())
     return f"Note '{title}' successfully added", notebook
 
+
 @Error_note
 def display_note(*args, **kwargs):
     """Виводить список заголовків всіх нотатків"""
@@ -294,9 +296,10 @@ def display_note(*args, **kwargs):
                     return note, notebook
             except ValueError:
                 pass
-        for note in notebook.paginator(notes_num = len(notebook)):
+        for note in notebook.paginator(notes_num=len(notebook)):
             return note, notebook
     return "No notes", notebook
+
 
 @Error_note
 def find_note(*args, **kwargs):
@@ -311,6 +314,7 @@ def find_note(*args, **kwargs):
             result.append(f"{key} : {value.title}, {value.text}, {value.tags}")
     return '\n'.join(result) or f"There are no results with {n}", notebook
 
+
 @Error_note
 def remove_note(*args, **kwargs):
     """ 
@@ -318,7 +322,8 @@ def remove_note(*args, **kwargs):
     """
     notebook: NoteBook = kwargs["notebook"]
     try:
-        word , notebook = notebook.remove_note(' '.join(args) if len(args) > 1 else args[0])
+        word, notebook = notebook.remove_note(
+            ' '.join(args) if len(args) > 1 else args[0])
     except IndexError:
         return 'Note not found', notebook
     save_contacts(note_file, notebook.to_dict())
@@ -348,19 +353,19 @@ def note_changes(*args, **kwargs):
             title = ' '.join(args).lower()
     except IndexError:
         raise IndexError('Введіть корретно заголовок') from None
-    
+
     note: Note = None
 
     for k, v in notebook.items():
         if title == k.lower():
             note = v
-    
+
     if note == None:
         return "Note not found", notebook
 
     input_text = "Якщо бажаєте змінити заголовк нажтіть '1' якщо текст ноатку нажміть '2' \
 а якщо теги тоді '3' "
-    choice = input(input_text+'\n >>>') 
+    choice = input(input_text+'\n >>>')
 
     match choice:
         case '1':
@@ -373,7 +378,7 @@ def note_changes(*args, **kwargs):
             notebook[new_title] = note
             save_contacts(note_file, notebook.to_dict())
             return f"Успішно замінили {old_title} на {new_title}", notebook
-        
+
         case '2':
             old_text = note.text
             new_text = input('Введіь новий текст: ')
@@ -385,7 +390,7 @@ def note_changes(*args, **kwargs):
         case '3':
             old_tags = note.tags
             new_tags = input('Введіь нові теги через кому: ')
-            new_tags = [Tag(tag.strip()) for tag in new_tags.split(',')]   
+            new_tags = [Tag(tag.strip()) for tag in new_tags.split(',')]
             note.change_tags(new_tags)
             notebook[note.title] = note
             save_contacts(note_file, notebook.to_dict())
@@ -393,8 +398,10 @@ def note_changes(*args, **kwargs):
         case _:
             raise IndexError('Введіть коррекно дані') from None
 
+
 # список функцій пакеу нотатків]
-NOTE_MODES = [add_note, display_note, find_note, remove_note, show_note,note_changes, find_tag]
+NOTE_MODES = [add_note, display_note, find_note,
+              remove_note, show_note, note_changes]
 
 MODES = {"hello": hello_func,
          "add": add_func,
@@ -413,7 +420,7 @@ MODES = {"hello": hello_func,
          "note": add_note,
          "fnote": find_note,
          "display": display_note,
-         "rnote":remove_note,
+         "rnote": remove_note,
          "snote": show_note,
          "cnote": note_changes,
          ".": exit_func}
@@ -432,7 +439,7 @@ def main():
     while True:
         func, text = handler(input('>>>'))
         if func in NOTE_MODES:
-            result, notebook = func(*text, notebook = notebook)
+            result, notebook = func(*text, notebook=notebook)
             print(result)
         elif func:
             result, contacts = func(*text, contacts=contacts)
@@ -445,4 +452,3 @@ def main():
 if __name__ == '__main__':
 
     main()
-
