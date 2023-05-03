@@ -66,9 +66,12 @@ class Note():
         return f"Title: '{old_text}' change to '{new_text}'"
     
     def change_tags(self, new_tag):
-        old_tag = ','.join(self.__tags)
+        try:
+            old_tag = ','.join(self.__tags)
+        except TypeError:
+            old_tag = 'tags are missing'
         self.__tags = new_tag
-        return f"Title: '{old_tag}' change to '{new_tag}'"
+        return f"Tags: '{old_tag}' change to '{new_tag}'"
     
 
 class NoteBook(UserDict):
@@ -85,7 +88,6 @@ class NoteBook(UserDict):
             if word.lower() == note.title.lower():
                 remove_note = note.title
         self.data.pop(remove_note)
-        print(type(self.data))
         return word, self
 
 
@@ -126,7 +128,7 @@ class NoteBook(UserDict):
             # превращаем в список ключи словаря и слайсим
             result_keys = list(self.data)[start: start + notes_num]
             # превращаем список ключей словаря в список строк с форматом "ключ : [значение]"
-            result_list = [f"{key}: {self.data.get(key).title},{self.data.get(key).tags}" for key in result_keys]
+            result_list = [f"{key}: {self.data.get(key).title},{self.data.get(key).text},{self.data.get(key).tags}" for key in result_keys]
             if not result_keys:
                 break
             yield '\n'.join(result_list)
